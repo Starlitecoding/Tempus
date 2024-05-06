@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun App(vibrator: Vibrator, modifier: Modifier = Modifier) {
     val timeValue = remember { mutableStateOf(0) }
-
+    val sliderValue = remember { mutableStateOf(0) }
 
         // Первая колонка занимает оставшееся место сверху
         Column(
@@ -85,7 +85,7 @@ fun App(vibrator: Vibrator, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.size(16.dp))
-            TimerControl(timeValue)
+            TimerControl(timeValue, sliderValue)
             Spacer(modifier = Modifier.size(16.dp))
             TimerStop(timeValue)
         }
@@ -97,12 +97,12 @@ fun App(vibrator: Vibrator, modifier: Modifier = Modifier) {
 
     LaunchedEffect(key1 = timeValue) {
         while (true) {
-            delay(1000L)
+            delay(10L)
             if (timeValue.value > 0) {
                 timeValue.value -= 1
-                hasVibrated = false // Reset the flag when timer starts counting down again
             } else {
-                // Vibrate on timer completion (only if not already vibrated)
+                // Reset timer to slider value when it reaches 0 (and vibrate)
+                timeValue.value = sliderValue.value
                 if (vibrator.hasVibrator() && !hasVibrated) {
                     vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
                     hasVibrated = true
@@ -126,9 +126,7 @@ fun TimerDisplay(timeSeconds: Int, modifier: Modifier = Modifier) {
 
 
 @Composable
-fun TimerControl(timeValue: MutableState<Int>, modifier: Modifier = Modifier) {
-    val minutes = timeValue.value / 60
-    val seconds = timeValue.value % 60
+fun TimerControl(timeValue: MutableState<Int>, sliderValue: MutableState<Int>, modifier: Modifier = Modifier) {
     val maxValue = 600
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -136,12 +134,13 @@ fun TimerControl(timeValue: MutableState<Int>, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Slider(
-            value = timeValue.value.toFloat(),
+            value = sliderValue.value.toFloat(), // Access the actual value using .value
             onValueChange = { newValue ->
-                timeValue.value = newValue.toInt() // Обновление значения таймера
+                sliderValue.value = newValue.toInt() // Update sliderValue using .value
+                timeValue.value = sliderValue.value // Update timer value on slider change
             },
-            valueRange = 0f..maxValue.toFloat(), // Диапазон значений ползунка (от 0 до 4 минут)
-            steps = (9) // Шаг изменения значения (1 минута)
+            valueRange = 0f..maxValue.toFloat(), // Диапазон значений ползунка (from 0 to 4 minutes)
+            steps = (9) // Шаг изменения значения (1 minute)
         )
     }
 }
