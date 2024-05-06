@@ -62,51 +62,44 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun App(vibrator: Vibrator, modifier: Modifier = Modifier) {
     val timeValue = remember { mutableStateOf(0) }
-    val sliderValue = remember { mutableStateOf(0) }
+    val sliderValue = remember { mutableStateOf(0) } // Initial slider value
+    var isRunning = remember { mutableStateOf(false) }
+    // Первая колонка занимает оставшееся место сверху
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        TimerDisplay(timeValue.value)
+    }
 
-        // Первая колонка занимает оставшееся место сверху
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            TimerDisplay(timeValue.value)
-
-        }
-
-        // Вторая колонка занимает 75% экрана снизу
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(top = 200.dp)
-                .padding(horizontal = 64.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.size(16.dp))
-            TimerControl(timeValue, sliderValue)
-            Spacer(modifier = Modifier.size(16.dp))
-            TimerStop(timeValue)
-        }
-
-
-
+    // Вторая колонка занимает 75% экрана снизу
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(top = 200.dp)
+            .padding(horizontal = 64.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.size(16.dp))
+        TimerControl(timeValue, sliderValue)
+        Spacer(modifier = Modifier.size(16.dp))
+        TimerStop(timeValue, sliderValue, isRunning)
+    }
 
     var hasVibrated = false
 
     LaunchedEffect(key1 = timeValue) {
         while (true) {
-            delay(10L)
+            delay(100L) // Adjust delay as needed
             if (timeValue.value > 0) {
                 timeValue.value -= 1
             } else {
-                // Reset timer to slider value when it reaches 0 (and vibrate)
+                // Reset timer to slider value, vibrate on every completion
                 timeValue.value = sliderValue.value
-                if (vibrator.hasVibrator() && !hasVibrated) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
-                    hasVibrated = true
-                }
+                vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
             }
         }
     }
@@ -146,11 +139,15 @@ fun TimerControl(timeValue: MutableState<Int>, sliderValue: MutableState<Int>, m
 }
 
 @Composable
-fun TimerStop(timeValue: MutableState<Int>, modifier: Modifier = Modifier) {
+fun TimerStop(timeValue: MutableState<Int>, sliderValue: MutableState<Int>, isRunning: MutableState<Boolean>, modifier: Modifier = Modifier) {
     Button(modifier = Modifier
         .width(128.dp)
         .height(48.dp),
-        onClick = { timeValue.value = 0  }) {
+        onClick = {
+            isRunning.value = false // Stop the timer cycle
+            timeValue.value = 0 // Reset timer value
+            sliderValue.value = 0 // Reset slider value
+        }) {
         Text(text = stringResource(id = R.string.stopTimer), fontSize = 16.sp)
     }
 }
